@@ -45,6 +45,13 @@ line:  char list of input equation
 index: index of line to read
 token: type of equation (PLUS, MINUS, TIMES, DIVIDED)
 '''
+def readLeftBracket(line, index):
+    token = {'type': 'LEFTBRACKET'}
+    return token, index + 1
+
+def readRightBracket(line, index):
+    token = {'type': 'RIGHTBRACKET'}
+    return token, index + 1
 
 def readPlus(line, index):
     token = {'type': 'PLUS'}
@@ -79,7 +86,11 @@ def tokenize(line):
     tokens = []
     index = 0
     while index < len(line):
-        if line[index].isdigit():
+        if line[index] == '(':
+            (token, index) = readLeftBracket(line, index)
+        elif line[index] == ')':
+            (token, index) = readRightBracket(line, index)
+        elif line[index].isdigit():
             (token, index) = readNumber(line, index)
         elif line[index] == '+':
             (token, index) = readPlus(line, index)
@@ -93,6 +104,11 @@ def tokenize(line):
             print 'Invalid character found: ' + line[index]
             exit(1)
         tokens.append(token)
+    print tokens
+    '''
+    (3.0+4*(2-1))/5 =>
+    [{'type': 'LEFTBRACKET'}, {'type': 'NUMBER', 'number': 3.0}, {'type': 'PLUS'}, {'type': 'NUMBER', 'number': 4}, {'type': 'TIMES'}, {'type': 'LEFTBRACKET'}, {'type': 'NUMBER', 'number': 2}, {'type': 'MINUS'}, {'type': 'NUMBER', 'number': 1}, {'type': 'RIGHTBRACKET'}, {'type': 'RIGHTBRACKET'}, {'type': 'DIVIDED'}, {'type': 'NUMBER', 'number': 5}]
+    '''
     return tokens
 
 '''
@@ -217,6 +233,15 @@ while True:
     print '> ',
     line = raw_input()
     tokens = tokenize(line)
+
+    # TODO delete brackets
+    # fetch pair of brackets (left, right) (ex. [[5, 9], [0, 10]])
+    # loop & and calculate inside bracket
+    # tokens_cp = tokens[5] ~ tokens[9]
+    # tokens_cp = evaluate_times_and_divided(tokens_cp)
+    # tokens_cp = evaluate_plus_and_minus(tokens_cp)
+    # delete components of tokens[5]-[9] and put tokens_cp
+
     tokens = evaluate_times_and_divided(tokens)
     answer = evaluate_plus_and_minus(tokens)
     print "answer = %f\n" % answer
