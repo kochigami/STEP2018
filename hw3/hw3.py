@@ -5,6 +5,19 @@
 reference: https://github.com/xharaken/step2015/blob/master/calculator_modularize_2.py
 '''
 
+'''
+readNumber
+
+pick number (digit & float) from input equation 
+
+input:  line, index 
+output: token, index
+
+line:  char list of input equation
+index: index of line to read
+token: pair of tyoe and number
+'''
+
 def readNumber(line, index):
     number = 0
     flag = 0
@@ -20,6 +33,18 @@ def readNumber(line, index):
     token = {'type': 'NUMBER', 'number': number * keta}
     return token, index
 
+'''
+readPlus/ Minus/ Times/ DIVIDED
+
+pick symbol from input equation 
+
+input:  line, index 
+output: token, index
+
+line:  char list of input equation
+index: index of line to read
+token: type of equation (PLUS, MINUS, TIMES, DIVIDED)
+'''
 
 def readPlus(line, index):
     token = {'type': 'PLUS'}
@@ -36,6 +61,19 @@ def readTimes(line, index):
 def readDivided(line, index):
     token = {'type': 'DIVIDED'}
     return token, index + 1
+
+'''
+tokenize
+
+read input line and pick variables
+
+input: line
+output: tokens
+
+line:   input equation
+tokens: list of numbers and symbols
+ex. [{'type': 'NUMBER', 'number': 3.2}, {'type': 'PLUS'} {'type': 'NUMBER', 'number': 0.2}]
+'''
 
 def tokenize(line):
     tokens = []
@@ -57,6 +95,19 @@ def tokenize(line):
         tokens.append(token)
     return tokens
 
+'''
+evaluate_times_and_divided
+
+find TIMES and DIVIDED and calculate part of equation
+
+input:  tokens
+output: tokens
+
+ex. 
+input  [{'type': 'NUMBER', 'number': 3.2}, {'type': 'PLUS'} {'type': 'NUMBER', 'number': 0.2} {'type': 'TIMES'} {'type': 'NUMBER', 'number': 5}]
+output [{'type': 'NUMBER', 'number': 3.2}, {'type': 'PLUS'} {'type': 'NUMBER', 'number': 1.0}]
+'''
+
 def evaluate_times_and_divided(tokens):
     index = 0
     while index < len(tokens):
@@ -73,6 +124,21 @@ def evaluate_times_and_divided(tokens):
         index += 1
     return tokens
 
+'''
+evaluate_plus_and_minus
+
+find PLUS and MINUS and calculate equation
+
+input:  tokens
+output: answer
+
+answer: number
+
+ex. 
+input [{'type': 'NUMBER', 'number': 3.2}, {'type': 'PLUS'} {'type': 'NUMBER', 'number': 1.0}]
+=> 4.2
+'''
+
 def evaluate_plus_and_minus(tokens):
     answer = 0
     tokens.insert(0, {'type': 'PLUS'}) # Insert a dummy '+' token
@@ -88,6 +154,20 @@ def evaluate_plus_and_minus(tokens):
         index += 1
     return answer
 
+'''
+test
+
+check if my algorithm is correct
+
+input:  line, expectedAnswer
+output: print message
+
+answer: number
+
+ex. 
+input [{'type': 'NUMBER', 'number': 3.2}, {'type': 'PLUS'} {'type': 'NUMBER', 'number': 1.0}]
+=> 4.2
+'''
 
 def test(line, expectedAnswer):
     tokens = tokenize(line)
@@ -102,8 +182,33 @@ def test(line, expectedAnswer):
 # Add more tests to this function :)
 def runTest():
     print "==== Test started! ===="
-    test("1+2", 3)
+    # read number
+    test("1", 1)
+    test("1.0", 1.0)
+
+    # plus
+    test("2+1", 3)
+
+    # minus
+    test("2-1", 1)
+
+    # times
+    test("2*1", 2)
+
+    # divided
+    test("2/1", 2)
+
+    # plus & minus    
     test("1.0+2.1-3", 0.1)
+
+    # plus & times
+    test("2+1*2", 4)
+
+    # plus & divided
+    test("2+1/2", 2.5)
+
+    # plus & times & divided
+    test("2+1/2*2", 3)
     print "==== Test finished! ====\n"
 
 runTest()
