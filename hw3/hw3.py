@@ -15,9 +15,12 @@ output: token, index
 
 line:  char list of input equation
 index: index of line to read
-token: pair of tyoe and number
-'''
+token: pair of type and number
 
+ex.
+readNumber(line='3.2-1', index=0)
+=> {'type': 'NUMBER', 'number': 3.2}
+'''
 def readNumber(line, index):
     number = 0
     flag = 0
@@ -39,11 +42,15 @@ readPlus/ Minus/ Times/ DIVIDED
 pick symbol from input equation 
 
 input:  line, index 
-output: token, index
+output: token, index + 1
 
 line:  char list of input equation
 index: index of line to read
-token: type of equation (PLUS, MINUS, TIMES, DIVIDED)
+token: type of equation (PLUS, MINUS, TIMES, DIVIDED, LEFTBRACKET, RIGHTBRACKET)
+
+ex.
+readMinus(line='3.2-1', index=3)
+=> {'type': 'MINUS'}
 '''
 def readLeftBracket(line, index):
     token = {'type': 'LEFTBRACKET'}
@@ -74,14 +81,19 @@ tokenize
 
 read input line and pick variables
 
-input: line
+input:  line
 output: tokens
 
 line:   input equation
 tokens: list of numbers and symbols
-ex. [{'type': 'NUMBER', 'number': 3.2}, {'type': 'PLUS'} {'type': 'NUMBER', 'number': 0.2}]
-'''
 
+ex.
+tokenize(line='3.2+0.2')
+=> [{'type': 'NUMBER', 'number': 3.2}, {'type': 'PLUS'} {'type': 'NUMBER', 'number': 0.2}]
+
+tokenize(line='(3.0+4*(2-1))/5')
+=> [{'type': 'LEFTBRACKET'}, {'type': 'NUMBER', 'number': 3.0}, {'type': 'PLUS'}, {'type': 'NUMBER', 'number': 4}, {'type': 'TIMES'}, {'type': 'LEFTBRACKET'}, {'type': 'NUMBER', 'number': 2}, {'type': 'MINUS'}, {'type': 'NUMBER', 'number': 1}, {'type': 'RIGHTBRACKET'}, {'type': 'RIGHTBRACKET'}, {'type': 'DIVIDED'}, {'type': 'NUMBER', 'number': 5}]
+'''
 def tokenize(line):
     tokens = []
     index = 0
@@ -104,25 +116,20 @@ def tokenize(line):
             print 'Invalid character found: ' + line[index]
             exit(1)
         tokens.append(token)
-    '''
-    (3.0+4*(2-1))/5 =>
-    [{'type': 'LEFTBRACKET'}, {'type': 'NUMBER', 'number': 3.0}, {'type': 'PLUS'}, {'type': 'NUMBER', 'number': 4}, {'type': 'TIMES'}, {'type': 'LEFTBRACKET'}, {'type': 'NUMBER', 'number': 2}, {'type': 'MINUS'}, {'type': 'NUMBER', 'number': 1}, {'type': 'RIGHTBRACKET'}, {'type': 'RIGHTBRACKET'}, {'type': 'DIVIDED'}, {'type': 'NUMBER', 'number': 5}]
-    '''
     return tokens
 
 '''
 evaluate_times_and_divided
 
-find TIMES and DIVIDED and calculate part of equation
+find TIMES and DIVIDED and calculate * and /
 
 input:  tokens
 output: tokens
 
 ex. 
-input  [{'type': 'NUMBER', 'number': 3.2}, {'type': 'PLUS'} {'type': 'NUMBER', 'number': 0.2} {'type': 'TIMES'} {'type': 'NUMBER', 'number': 5}]
-output [{'type': 'NUMBER', 'number': 3.2}, {'type': 'PLUS'} {'type': 'NUMBER', 'number': 1.0}]
+evaluate_times_and_divided ([{'type': 'NUMBER', 'number': 3.2}, {'type': 'PLUS'} {'type': 'NUMBER', 'number': 0.2} {'type': 'TIMES'} {'type': 'NUMBER', 'number': 5}])
+=> output [{'type': 'NUMBER', 'number': 3.2}, {'type': 'PLUS'} {'type': 'NUMBER', 'number': 1.0}]
 '''
-
 def evaluate_times_and_divided(tokens):
     index = 0
     while index < len(tokens):
@@ -132,13 +139,38 @@ def evaluate_times_and_divided(tokens):
                     token = {'type': 'NUMBER', 'number': tokens[index - 1]['number'] * tokens[index + 1]['number']}
                 elif tokens[index]['type'] == 'DIVIDED':
                     token = {'type': 'NUMBER', 'number': tokens[index - 1]['number'] / float(tokens[index + 1]['number'])}                
+                tokens[index] = token
+                del tokens[index - 1]
+                del tokens[index]
+                '''
+                note:
+                tokens #0
                 tokens[index] = token #1
                 del tokens[index - 1] #2
                 del tokens[index]     #3
-                # 0: [{'type': 'NUMBER', 'number': 2}, {'type': 'PLUS'}, {'type': 'NUMBER', 'number': 1}, {'type': 'DIVIDED'}, {'type': 'NUMBER', 'number': 2}, {'type': 'TIMES'}, {'type': 'NUMBER', 'number': 2}]
+
+                # 0 (original): [{'type': 'NUMBER', 'number': 2}, {'type': 'PLUS'}, {'type': 'NUMBER', 'number': 1}, {'type': 'DIVIDED'}, {'type': 'NUMBER', 'number': 2}, {'type': 'TIMES'}, {'type': 'NUMBER', 'number': 2}]
+
+                1/2 was calculated
+                answer 0.5 is put into tokens[index]
+
                 # 1: [{'type': 'NUMBER', 'number': 2}, {'type': 'PLUS'}, {'type': 'NUMBER', 'number': 1}, {'type': 'NUMBER', 'number': 0.5}, {'type': 'NUMBER', 'number': 2}, {'type': 'TIMES'}, {'type': 'NUMBER', 'number': 2}]
+
+                We need to delete {'type': 'NUMBER', 'number': 1} (in index-1), {'type': 'NUMBER', 'number': 2} (in index+1)
+                delete {'type': 'NUMBER', 'number': 1} (in index-1) first
+
                 # 2: [{'type': 'NUMBER', 'number': 2}, {'type': 'PLUS'}, {'type': 'NUMBER', 'number': 0.5}, {'type': 'NUMBER', 'number': 2}, {'type': 'TIMES'}, {'type': 'NUMBER', 'number': 2}]
+
+                delete {'type': 'NUMBER', 'number': 2} (in index [changed: index+1 -> index])
+
                 # 3: [{'type': 'NUMBER', 'number': 2}, {'type': 'PLUS'}, {'type': 'NUMBER', 'number': 0.5}, {'type': 'TIMES'}, {'type': 'NUMBER', 'number': 2}]
+                '''
+
+                '''
+                Now that {'type': 'TIMES'} is in index.
+                We have to move index back to process {'type': 'TIMES'} in next loop.
+                If we don't do this, next component processed is {'type': 'NUMBER', 'number': 2}
+                '''
                 index -= 1
         index += 1
     return tokens
@@ -154,10 +186,9 @@ output: answer
 answer: number
 
 ex. 
-input [{'type': 'NUMBER', 'number': 3.2}, {'type': 'PLUS'} {'type': 'NUMBER', 'number': 1.0}]
+evaluate_plus_and_minus([{'type': 'NUMBER', 'number': 3.2}, {'type': 'PLUS'} {'type': 'NUMBER', 'number': 1.0}])
 => 4.2
 '''
-
 def evaluate_plus_and_minus(tokens):
     answer = 0
     tokens.insert(0, {'type': 'PLUS'}) # Insert a dummy '+' token
@@ -173,12 +204,40 @@ def evaluate_plus_and_minus(tokens):
         index += 1
     return answer
 
+'''
+search_bracket
+
+search for brackets from line
+
+input:  tokens
+output: brackets
+
+ex.
+tokens: (((1)))
+=> [[0], [1], [2]]
+=> [[0, 6], [1, 5], [2, 4]]
+'''
 def search_bracket(tokens):
     brackets=[]
+    '''
+    search for left bracket '('
+    if found, put index into brackets
+    ex.
+    tokens: (((1)))
+    => [[0], [1], [2]]
+    '''
     for index in range(len(tokens)):
         if tokens[index]['type'] == 'LEFTBRACKET':
             brackets.append([index])
+    '''
+    search for right bracket ')'
+    if found, put index into brackets so that correct indexes can be paired in the list
+    To do so, put found index into a list in brackets in reverse order
 
+    ex.
+    tokens: (((1)))
+    => [[0, 6], [1, 5], [2, 4]]
+    '''
     tokens_index = 0
     if len(brackets) > 0:
         brackets_index = len(brackets) -1
@@ -190,25 +249,74 @@ def search_bracket(tokens):
 
     return brackets
 
+'''
+calculate_inside_bracket
+
+input:  tokens, brackets
+output: tokens
+
+ex.
+calculate_inside_bracket(tokenized (((1))), [[0, 6], [1, 5], [2, 4]])
+=> tokenized ((1))
+=> tokenized (1)
+=> tokenized 1
+'''
 def calculate_inside_bracket(tokens, brackets):
     tokens_cp = []
     delete_components = 0
+    '''
+    process a bracket with small range
+
+    ex.
+    if brackets: [[0, 6], [1, 5], [2, 4]]
+    => process 1. [2, 4], 2. [1, 5], 3. [0, 6]
+    '''
     for i in range(len(brackets)-1, -1, -1):
-        # tokens_cp = tokens[5] ~ tokens[9]
         tokens_cp = []
+        '''
+        copy components inside brackets
+
+        ex.
+        (((1+2)+3)+4) => [[0,12],[1,9],[2,6]] => [2,6]
+        tokens_cp: [1+2]
+        '''
         for j in range(brackets[i][0] + 1, brackets[i][1] - delete_components):
             tokens_cp.append(tokens[j])
 
-        # tokens_cp = evaluate_times_and_divided(tokens_cp)
-        # tokens_cp = evaluate_plus_and_minus(tokens_cp)
+        '''
+        calculate inside brackets
+        put answer in tokens[left_bracket_position]
+
+        ex.
+        (((1+2)+3)+4) => [[0,12],[1,9],[2,6]] => [2,6]
+        tokens_cp: [1+2] => put 3 in tokens[2]
+        '''
         tokens_cp = evaluate_times_and_divided(tokens_cp)
         tokens_cp = evaluate_plus_and_minus(tokens_cp)
         tokens[brackets[i][0]] = {'type': 'NUMBER', 'number': tokens_cp}
 
-        # delete components of tokens[5]-[9] and put tokens_cp
+        '''
+        delete components inside brackets
+
+        ex.
+        (((1+2)+3)+4) => ((31+2)+3)+4)
+        We need to delete '1+2)'
+        expected: ((3+3)+4)
+
+        We also have to consider how many components are deleted for before
+        because the length of tokens shrinked
+        count it as delete_components
+        '''
         for j in range(brackets[i][0] + 1, brackets[i][1] + 1 - delete_components):
             del tokens[brackets[i][0] + 1]
-        delete_components += (brackets[i][1] + 2 - delete_components -1) - (brackets[i][0] + 1)
+
+        '''
+        ex.
+        ((31+2)+3)+4) => [2,6]
+        (6-0) - (2+1) + 1 = 4
+        delete 4 components
+        '''
+        delete_components += (brackets[i][1] - delete_components) - (brackets[i][0] + 1) + 1
 
     return tokens
 
@@ -223,10 +331,9 @@ output: print message
 answer: number
 
 ex. 
-input [{'type': 'NUMBER', 'number': 3.2}, {'type': 'PLUS'} {'type': 'NUMBER', 'number': 1.0}]
+test([{'type': 'NUMBER', 'number': 3.2}, {'type': 'PLUS'} {'type': 'NUMBER', 'number': 1.0}])
 => 4.2
 '''
-
 def test(line, expectedAnswer):
     tokens = tokenize(line)
     brackets = search_bracket(tokens)
@@ -289,6 +396,8 @@ while True:
     # loop & and calculate inside bracket
     tokens = calculate_inside_bracket(tokens, brackets)
 
+    # calculate * and / first
     tokens = evaluate_times_and_divided(tokens)
+    # calculate + and -
     answer = evaluate_plus_and_minus(tokens)
     print "answer = %f\n" % answer
