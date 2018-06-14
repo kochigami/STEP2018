@@ -208,116 +208,43 @@ def evaluate_plus_and_minus(tokens):
 search_bracket
 
 search for brackets from line
+1. find deepest right bracket
+2. find closest left bracket with 1
 
 input:  tokens
-output: brackets
+output: tokens (without brackets)
 
 ex.
 tokens: (((1)))
-=> [[0], [1], [2]]
-=> [[0, 6], [1, 5], [2, 4]]
+=> [{'type': 'NUMBER', 'number': 1}]
+
+tokens: (1+2)*(1+3)
+=> [{'type': 'NUMBER', 'number': 3}, {'type': 'TIMES'}, {'type': 'NUMBER', 'number': 4}]
 '''
 def search_bracket(tokens):
-    brackets=[]
-    '''
-    search for left bracket '('
-    if found, put index into brackets
-    ex.
-    tokens: (((1)))
-    => [[0], [1], [2]]
-    '''
-    for index in range(len(tokens)):
-        if tokens[index]['type'] == 'LEFTBRACKET':
-            brackets.append([index])
     '''
     search for right bracket ')'
-    if found, put index into brackets so that correct indexes can be paired in the list
-    To do so, put found index into a list in brackets in reverse order
-
-    ex.
-    tokens: (((1)))
-    => [[0, 6], [1, 5], [2, 4]]
     '''
-    tokens_index = 0
-    if len(brackets) > 0:
-        brackets_index = len(brackets) -1
-        while tokens_index < len(tokens) and brackets_index > -1:
-            if tokens[tokens_index]['type'] == 'RIGHTBRACKET':
-                brackets[brackets_index].append(tokens_index)
-                brackets_index -= 1
-            tokens_index += 1
 
-    return brackets
-
-'''
-calculate_inside_bracket
-
-input:  tokens, brackets
-output: tokens
-
-ex.
-calculate_inside_bracket(tokenized (((1))), [[0, 6], [1, 5], [2, 4]])
-=> tokenized ((1))
-=> tokenized (1)
-=> tokenized 1
-'''
-def calculate_inside_bracket(tokens, brackets):
-    tokens_cp = []
-    delete_components = 0
-    '''
-    process a bracket with small range
-
-    ex.
-    if brackets: [[0, 6], [1, 5], [2, 4]]
-    => process 1. [2, 4], 2. [1, 5], 3. [0, 6]
-    '''
-    for i in range(len(brackets)-1, -1, -1):
+    index = 0
+    while index < len(tokens):
+        delete_components=0
         tokens_cp = []
-        '''
-        copy components inside brackets
-
-        ex.
-        (((1+2)+3)+4) => [[0,12],[1,9],[2,6]] => [2,6]
-        tokens_cp: [1+2]
-        '''
-        for j in range(brackets[i][0] + 1, brackets[i][1] - delete_components):
-            tokens_cp.append(tokens[j])
-
-        '''
-        calculate inside brackets
-        put answer in tokens[left_bracket_position]
-
-        ex.
-        (((1+2)+3)+4) => [[0,12],[1,9],[2,6]] => [2,6]
-        tokens_cp: [1+2] => put 3 in tokens[2]
-        '''
-        tokens_cp = evaluate_times_and_divided(tokens_cp)
-        tokens_cp = evaluate_plus_and_minus(tokens_cp)
-        tokens[brackets[i][0]] = {'type': 'NUMBER', 'number': tokens_cp}
-
-        '''
-        delete components inside brackets
-
-        ex.
-        (((1+2)+3)+4) => ((31+2)+3)+4)
-        We need to delete '1+2)'
-        expected: ((3+3)+4)
-
-        We also have to consider how many components are deleted for before
-        because the length of tokens shrinked
-        count it as delete_components
-        '''
-        for j in range(brackets[i][0] + 1, brackets[i][1] + 1 - delete_components):
-            del tokens[brackets[i][0] + 1]
-
-        '''
-        ex.
-        ((31+2)+3)+4) => [2,6]
-        (6-0) - (2+1) + 1 = 4
-        delete 4 components
-        '''
-        delete_components += (brackets[i][1] - delete_components) - (brackets[i][0] + 1) + 1
-
+        if tokens[index]['type'] == 'RIGHTBRACKET':
+            for i in range(index-1, -1, -1):
+                if tokens[i]['type'] == 'LEFTBRACKET':
+                    for j in range(i + 1, index):
+                        tokens_cp.append(tokens[j])
+                    tokens_cp = evaluate_times_and_divided(tokens_cp)
+                    tokens_cp = evaluate_plus_and_minus(tokens_cp)
+                    tokens[i] = {'type': 'NUMBER', 'number': tokens_cp}
+                    for j in range(i+1, index + 1):
+                        del tokens[i+1]
+                    delete_components += index - i
+                    index -= delete_components
+                    break
+        else:
+            index +=1
     return tokens
 
 '''
@@ -337,7 +264,6 @@ test([{'type': 'NUMBER', 'number': 3.2}, {'type': 'PLUS'} {'type': 'NUMBER', 'nu
 def test(line, expectedAnswer):
     tokens = tokenize(line)
     brackets = search_bracket(tokens)
-    tokens = calculate_inside_bracket(tokens, brackets)
     tokens = evaluate_times_and_divided(tokens)
     actualAnswer = evaluate_plus_and_minus(tokens)
     if abs(actualAnswer - expectedAnswer) < 1e-8:
@@ -381,6 +307,9 @@ def runTest():
     test("(((1)))", 1)
     test("(3.0+4*(2-1))/5", 1.4)
     test("3.0+(2.1-10/100)", 5.0)
+    test("((1)+(2))",3)
+    test("(1+2)+(3)", 6)
+    test("((1+2)*(3))+(1*2)", 11)
 
     print "==== Test finished! ====\n"
 
@@ -391,11 +320,8 @@ while True:
     line = raw_input()
     tokens = tokenize(line)
 
-    # fetch pair of brackets (left, right) (ex. [[0, 10], [5, 9]])
-    brackets = search_bracket(tokens)
-    # loop & and calculate inside bracket
-    tokens = calculate_inside_bracket(tokens, brackets)
-
+    # calculate equation with brackets first
+    tokens = search_bracket(tokens)
     # calculate * and / first
     tokens = evaluate_times_and_divided(tokens)
     # calculate + and -
