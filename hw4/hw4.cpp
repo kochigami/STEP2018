@@ -11,6 +11,10 @@ int read_links_file(std::vector< std::vector<int> > &g);
 int read_pages_file(std::vector< std::string > &p);
 std::vector<int> BFS(std::vector< std::vector<int> > &g, int from, int to);
 
+/* 
+   link file を読み込むための関数
+   std::vector< std::vector<int> > &g の各インデックスにリンクを入れる
+*/
 int read_links_file(std::vector< std::vector<int> > &g){
   std::ifstream ifs("./wikipedia/links.txt");
   if (ifs.fail())
@@ -19,14 +23,14 @@ int read_links_file(std::vector< std::vector<int> > &g){
       return -1;
     }
   static int index = 0;
-  int count = 0;
+  static int count = 0;
 
   while(!ifs.eof())
     {
       int word;
       ifs >> word;
-      //std::cout << word << std::endl;
-
+      
+      // ファイルから，indexとlinkが交互に取り出される
       if (count % 2 == 0){
 	// word : index
 	if (word != index){
@@ -34,14 +38,14 @@ int read_links_file(std::vector< std::vector<int> > &g){
 	}
       }
       else{
-	// word : number
+	// word : link
 	g[index].push_back(word);
       }
       count += 1;
     } 
 
   // idごとに読み込めていることを確認したい
-  // できた；
+  // できた:
   // 30224 {10345, 517061, 406520, 18826, 170103, 851077, 273529, 851107, 95543, 3702, 134374, 11082, 2141, 177927, 10254, 209787, 436365, 174259, 45069, 1313, 127538, 116015, 31645, 700704, 261677, 28052, 9414, 1144051, 229787, 3190, 732790, 449328, 1050474, 78329, 3180, 27822, 24984, 39953, 8, 189207, 6091, 165969, 10852, 18859, 559883, 847580, 449232, 607457, 3415, 11958, 101083, 2125, 41082, 50472, 257074, 7527, 3186, 66136, 306305, 5268, 436394, 1305866, 3875, 1281841, 37156, 37060, 3288, 3352, 1236579, 18837, 16776, 179332, 18470, 221855, 49544, 18835, 67145, 2868, 436383, 436276}
   // 30225 {219595}
   // 30226 {30224}
@@ -73,6 +77,10 @@ int read_links_file(std::vector< std::vector<int> > &g){
   
 }
 
+/* 
+   page file を読み込むための関数
+   std::vector< std::string > &p に名前を追加していく
+*/
 int read_pages_file(std::vector< std::string > &p){
   std::ifstream ifs2("./wikipedia/pages.txt");
   if (ifs2.fail())
@@ -81,7 +89,8 @@ int read_pages_file(std::vector< std::string > &p){
       return -1;
     }
 
-  int count = 0;
+  // ファイルから，indexとnameが交互に取り出される
+  static int count = 0;
   std::string word;
   while(!ifs2.eof())
     {
@@ -102,31 +111,43 @@ int read_pages_file(std::vector< std::string > &p){
   return 0;
 }
 
-// TODO: BFS
-// dequeue
-// enqueue
+/*
+  BFSでグラフ構造を使いながら，スタートからゴールまでたどる関数
+  std::vector<int> BFS(std::vector< std::vector<int> > &g, int from, int to)
+  
+  引数：
+  std::vector< std::vector<int> > &g: read_links_file 関数で作ったリスト 
+  int from: スタートのID 
+  int to: ゴールのID
+ */
 std::vector<int> BFS(std::vector< std::vector<int> > &g, int from, int to){
   std::queue<std::vector<int>> queue;
-  //queue.push(from);
-  queue.push( std::vector<int>() ); // 空のベクタを，キューに追加
-  queue.front().push_back(from); 
-  //queue.emplace(std::vector<int>({from}));
+  // 空のベクタをキューに追加
+  queue.push( std::vector<int>() );
+  queue.front().push_back(from);
   
   while( !queue.empty() ) {
+    // キューの先頭のリストを取得
     const auto& route = queue.front();
+    // 末尾の数字を取得
     int cur = route.back();
-    //std::cout << cur << std::endl;
+    // 末尾の数字がゴールに一致していたら探索終了
     if(cur == to) {
-      //std::cout << route << std::endl;
       return route;
     }
+    /* 
+       末尾の数字がゴールに一致していなかったら
+       末尾の数字が続く先の数字を順次追加して経路を量産する
+       キューの後ろに追加
+    */
     else{
       for (const auto& i : g[cur]) {
 	auto new_route = route;
 	new_route.push_back(i);
-	queue.emplace(std::move(new_route));
+	queue.push(new_route);
       }
     }
+    // 先頭のリスト（先ほどまで注目していたもの）を削除．キューの後ろに更新したものを追加したため
     queue.pop();
   }
   return std::vector<int>();
@@ -141,12 +162,16 @@ int main()
   std::vector< std::string > p(1483277);
   read_pages_file(p);
 
-  // 何も出力されない
+  // 何も出力されない (*)
+  // std::cout << p[0] << std::endl;
   // std::cout << p[0].c_str() << std::endl;
 
   while(true){
     // input word
+
+    // 本当は文字で入力したかったが，文字での経路表示がうまくいかない(*)ため断念．
     //std::string from, to;
+
     int from, to;
     std::cout << "from?: " << std::endl;
     std::cin >> from;
@@ -155,7 +180,7 @@ int main()
     
     std::cout << "from: " << from << " to: " << to  << std::endl;
 
-    // TODO: convert string to number
+    // TODO: convert string to number (*)
 
     // bfs
     auto path = BFS(g, from, to);
@@ -170,7 +195,7 @@ int main()
     bool is_first = true;
     for (auto& v : path) {
       std::cout << (is_first ? "" : ", ") << v;
-      // 何も出力されない
+      // 何も出力されない (*)
       //std::cout << (is_first ? "" : ", ") << p[v];
       is_first = false;
     }
@@ -179,16 +204,3 @@ int main()
   return 0;
 }
 
-// 1 言語　自閉症　100 一条ゆかり
-
-// 631490 キーラナイトレイ　-> 2844 パンダ
-// {631490, 83363, 4650, 22435, 2844}
-// キーラ・ナイトレイ ロンドン アトランタ　パンダ
-
-// 213086  コアラのマーチ => 4847    北野武
-// Path: {213086, 151525, 4847}
-// 151525: 上田晋也
-
-// 15537   たんぽぽ => 2844 パンダ
-// Path: {15537, 29805, 362364, 123640, 2844}
-// たんぽぽ　タンポポ　牙　草食動物　パンダ　（これは今のwikipediaでも辿れる！）
